@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitNez — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page active" style="display:flex">
+    <aside class="auth-hero">
+        <div class="hero-content">
+            <div class="brand"><span class="brand-bolt">⚡</span><span class="brand-name">FitNez</span></div>
+            <h2 class="hero-headline">Train Smarter.<br>Live Better.</h2>
+            <p class="hero-sub">Platform fitness modern untuk member, trainer, dan admin.</p>
+        </div>
+    </aside>
+    <main class="auth-panel">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="tab active" onclick="window.location.href='/pages/login.html'">Login</button>
+                <button class="tab" onclick="window.location.href='/pages/register.html'">Register</button>
+            </div>
+            <form id="form-login" class="auth-form" novalidate>
+                <header class="form-header"><h3>Selamat Datang</h3><p>Login ke akun Anda</p></header>
+                <fieldset>
+                    <legend class="sr-only">Login</legend>
+                    <div class="field-group">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" placeholder="anda@contoh.com" required>
+                    </div>
+                    <div class="field-group">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" placeholder="Masukkan password" required>
+                    </div>
+                </fieldset>
+                <p id="error-msg" class="msg msg--error hidden"></p>
+                <button type="submit" class="btn btn--primary btn--full">Sign In</button>
+                <p class="demo-hint">
+                    Demo — password: <code>123456</code><br>
+                    <span class="demo-chip" onclick="fill('admin@gmail.com')">admin@gmail.com</span>
+                    <span class="demo-chip" onclick="fill('trainer@gmail.com')">trainer@gmail.com</span>
+                    <span class="demo-chip" onclick="fill('member@gmail.com')">member@gmail.com</span>
+                </p>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+    
+// Jika sudah login, redirect ke dashboard
+if (Http.getToken()) window.location.href = '/pages/dashboard.html';
+
+function fill(email) {
+    document.getElementById('email').value = email;
+    document.getElementById('password').value = '123456';
+}
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('error-msg');
+    errEl.classList.add('hidden');
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        errEl.textContent = 'Harap isi semua field.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const data = await Http.post('/auth/login', { email, password });
+        Http.setToken(data.token);
+        localStorage.setItem('fitnez_user', JSON.stringify(data.user));
+        window.location.href = '/pages/dashboard.html';
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitNez — Register</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="page active" style="display:flex">
+    <aside class="auth-hero">
+        <div class="hero-content">
+            <div class="brand"><span class="brand-bolt">⚡</span><span class="brand-name">FitNez</span></div>
+            <h2 class="hero-headline">Join The<br>Community.</h2>
+            <p class="hero-sub">Buat akun dan mulai perjalanan fitness Anda. Semua pendaftar baru otomatis menjadi Member.</p>
+        </div>
+    </aside>
+    <main class="auth-panel">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="tab" onclick="window.location.href='/pages/login.html'">Login</button>
+                <button class="tab active">Register</button>
+            </div>
+            <form id="form-register" class="auth-form" novalidate>
+                <header class="form-header"><h3>Buat Akun</h3><p>Bergabung dengan FitNez sebagai Member</p></header>
+                <fieldset>
+                    <legend class="sr-only">Register</legend>
+                    <div class="field-group"><label for="name">Nama Lengkap</label><input id="name" type="text" placeholder="John Smith" required></div>
+                    <div class="field-group"><label for="email">Email</label><input id="email" type="email" placeholder="anda@contoh.com" required></div>
+                    <div class="field-group"><label for="password">Password</label><input id="password" type="password" placeholder="Minimal 6 karakter" required></div>
+                </fieldset>
+                <p id="error-msg" class="msg msg--error hidden"></p>
+                <p id="success-msg" class="msg msg--success hidden"></p>
+                <button type="submit" class="btn btn--primary btn--full">Buat Akun</button>
+                <p class="demo-hint">Ingin menjadi Trainer? Daftar dulu sebagai Member,<br>lalu upgrade dari halaman profil.</p>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+document.getElementById('form-register').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('error-msg');
+    const sucEl = document.getElementById('success-msg');
+    errEl.classList.add('hidden');
+    sucEl.classList.add('hidden');
+
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!name || !email || !password) { errEl.textContent = 'Semua field wajib diisi.'; errEl.classList.remove('hidden'); return; }
+    if (password.length < 6) { errEl.textContent = 'Password minimal 6 karakter.'; errEl.classList.remove('hidden'); return; }
+
+    try {
+        await Http.post('/auth/register', { name, email, password, role: 'member' });
+        sucEl.textContent = 'Akun berhasil dibuat! Silakan login.';
+        sucEl.classList.remove('hidden');
+        document.getElementById('form-register').reset();
+    } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+</script>
+</body>
+</html>

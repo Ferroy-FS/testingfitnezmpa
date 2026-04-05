@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitNez — Daftar Trainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--bg);
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--green);
+            background: var(--green-light);
+        }
+        .upload-area .upload-icon { font-size: 36px; margin-bottom: 10px; }
+        .upload-area p { color: var(--mute); font-size: 13px; }
+        .upload-area .file-name {
+            color: var(--green-dark);
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(255,255,255,0.96);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .loading-overlay.hidden { display: none; }
+        .spinner {
+            width: 56px; height: 56px;
+            border: 4px solid var(--border);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+        .loading-overlay p { color: var(--mute); font-size: 13px; }
+        .loading-steps { margin-top: 20px; text-align: left; }
+        .loading-steps .step {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: var(--mute); padding: 6px 0;
+        }
+        .loading-steps .step.done { color: var(--green-dark); font-weight: 600; }
+        .loading-steps .step.active { color: var(--dark); }
+    </style>
+</head>
+<body>
+<div class="page active" style="display:flex">
+    <aside class="auth-hero">
+        <div class="hero-content">
+            <div class="brand"><span class="brand-bolt">⚡</span><span class="brand-name">FitNez</span></div>
+            <h2 class="hero-headline">Become A<br>Trainer.</h2>
+            <p class="hero-sub">Upload sertifikat Anda untuk menjadi trainer profesional di FitNez.</p>
+        </div>
+    </aside>
+    <main class="auth-panel">
+        <div class="auth-card">
+            <header class="form-header">
+                <h3>🏋️ Daftar Sebagai Trainer</h3>
+                <p>Upload sertifikat untuk verifikasi</p>
+            </header>
+            <form id="form-trainer" novalidate>
+                <fieldset>
+                    <legend class="sr-only">Trainer Registration</legend>
+                    <div class="field-group">
+                        <label>Sertifikat (PDF)</label>
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" id="cert-file" accept=".pdf" style="display:none">
+                            <div class="upload-icon">📄</div>
+                            <p>Klik atau drag file PDF sertifikat di sini</p>
+                            <p class="file-name" id="file-name"></p>
+                        </div>
+                    </div>
+                </fieldset>
+                <p id="trainer-error" class="msg msg--error hidden"></p>
+                <button type="submit" class="btn btn--primary btn--full" style="margin-top:12px">Upload & Verifikasi</button>
+                <button type="button" class="btn btn--ghost btn--full" style="margin-top:8px" onclick="window.location.href='/pages/dashboard.html'">Kembali ke Dashboard</button>
+            </form>
+        </div>
+    </main>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <h3>Memverifikasi Sertifikat...</h3>
+    <p>Mohon tunggu sebentar</p>
+    <div class="loading-steps">
+        <div class="step" id="step-1">⏳ Mengupload sertifikat...</div>
+        <div class="step" id="step-2">⏳ Memvalidasi dokumen...</div>
+        <div class="step" id="step-3">⏳ Mengupdate role Anda...</div>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+if (!Http.getToken()) { window.location.href = '/pages/login.html'; }
+
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('cert-file');
+const fileNameEl = document.getElementById('file-name');
+let selectedFile = null;
+
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+    if (file.type !== 'application/pdf') {
+        document.getElementById('trainer-error').textContent = 'Hanya file PDF yang diterima.';
+        document.getElementById('trainer-error').classList.remove('hidden');
+        return;
+    }
+    selectedFile = file;
+    fileNameEl.textContent = '✅ ' + file.name;
+    document.getElementById('trainer-error').classList.add('hidden');
+}
+
+document.getElementById('form-trainer').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('trainer-error');
+    errEl.classList.add('hidden');
+
+    if (!selectedFile) {
+        errEl.textContent = 'Silakan upload sertifikat terlebih dahulu.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
+    // Show loading overlay with steps
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.remove('hidden');
+
+    const steps = ['step-1', 'step-2', 'step-3'];
+    for (let i = 0; i < steps.length; i++) {
+        document.getElementById(steps[i]).classList.add('active');
+        document.getElementById(steps[i]).textContent = '⏳ ' + document.getElementById(steps[i]).textContent.slice(2);
+        await new Promise(r => setTimeout(r, 1200));
+        document.getElementById(steps[i]).classList.remove('active');
+        document.getElementById(steps[i]).classList.add('done');
+        document.getElementById(steps[i]).textContent = '✅ ' + document.getElementById(steps[i]).textContent.slice(2);
+    }
+
+    // Actually upload
+    try {
+        const formData = new FormData();
+        formData.append('certificate', selectedFile);
+
+        const token = Http.getToken();
+        const res = await fetch('/api/users/upgrade-trainer', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            credentials: 'include',
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal upgrade');
+
+        // Update local storage with new user data
+        if (data.user) {
+            localStorage.setItem('fitnez_user', JSON.stringify(data.user));
+        }
+
+        await new Promise(r => setTimeout(r, 800));
+        window.location.href = '/pages/dashboard.html';
+    } catch (err) {
+        overlay.classList.add('hidden');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitNez — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="app-shell" style="display:flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-bolt">⚡</span>
+            <span class="brand-name">FitNez</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#profile" class="nav-item active" data-section="profile">
+                <span class="nav-icon">👤</span><span class="nav-label">Profile</span>
+            </a>
+            <a href="#members" id="nav-members" class="nav-item" data-section="members" style="display:none">
+                <span class="nav-icon">👥</span><span class="nav-label">Members</span>
+            </a>
+            <a href="#schedule" class="nav-item" data-section="schedule">
+                <span class="nav-icon">📅</span><span class="nav-label">Schedule</span>
+            </a>
+            <a href="#my-schedule" class="nav-item" data-section="my-schedule">
+                <span class="nav-icon">🏋️</span><span class="nav-label">Latihan Saya</span>
+            </a>
+            <a href="#attendance" class="nav-item" data-section="attendance">
+                <span class="nav-icon">✅</span><span class="nav-label">Attendance</span>
+            </a>
+            <a href="#logs" id="nav-logs" class="nav-item" data-section="logs" style="display:none">
+                <span class="nav-icon">🔐</span><span class="nav-label">Auth Logs</span>
+            </a>
+        </nav>
+        <footer class="sidebar-footer">
+            <p class="sidebar-meta">Logged in as <strong id="sb-role">—</strong></p>
+            <button id="btn-logout" class="btn btn--logout">Logout</button>
+        </footer>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Toast -->
+        <div id="toast" style="display:none;position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;box-shadow:0 4px 20px rgba(0,0,0,0.15)"></div>
+
+        <!-- Section: Profile -->
+        <section id="section-profile" class="content-section" style="display:block">
+            <div class="profile-grid">
+                <article class="card identity-card">
+                    <div id="avatar" class="avatar">?</div>
+                    <h3 id="p-name">—</h3>
+                    <span id="p-badge" class="badge">—</span>
+                    <p id="p-bio" style="color:var(--mute);font-size:13px;margin-top:4px;text-align:center;font-style:italic"></p>
+                    <dl class="detail-list">
+                        <div class="detail-row"><dt>Email</dt><dd id="p-email">—</dd></div>
+                        <div class="detail-row"><dt>Role</dt><dd id="p-role">—</dd></div>
+                        <div class="detail-row"><dt>Joined</dt><dd id="p-joined">—</dd></div>
+                        <div class="detail-row"><dt>Status</dt><dd class="status-active">● Active</dd></div>
+                    </dl>
+                    <div id="trainer-action" style="width:100%;margin-top:12px"></div>
+                </article>
+                <article class="card edit-card">
+                    <h4>Update Profile</h4>
+                    <form id="form-profile">
+                        <div class="field-group"><label for="edit-name">Nama</label><input id="edit-name" type="text"></div>
+                        <div class="field-group"><label for="edit-phone">Telepon</label><input id="edit-phone" type="tel" placeholder="+62 812 000 0000"></div>
+                        <div class="field-group"><label for="edit-bio">Bio</label><textarea id="edit-bio" rows="3" placeholder="Ceritakan tentang diri Anda..."></textarea></div>
+                        <p id="profile-msg" class="msg msg--success hidden">Profil berhasil diperbarui!</p>
+                        <button type="submit" class="btn btn--primary">Simpan</button>
+                    </form>
+                </article>
+            </div>
+        </section>
+
+        <!-- Section: Members -->
+        <section id="section-members" class="content-section" style="display:none">
+            <header class="section-header">
+                <button id="btn-add-member" class="btn btn--primary" style="display:none">+ Tambah Member</button>
+            </header>
+            <div id="add-member-form" class="card form-panel hidden">
+                <h4>Tambah Member Baru</h4>
+                <form id="form-add-member" class="field-row">
+                    <div class="field-group"><label>Nama</label><input id="am-name" type="text" required placeholder="Jane Smith"></div>
+                    <div class="field-group"><label>Email</label><input id="am-email" type="email" required placeholder="jane@contoh.com"></div>
+                    <div class="field-group"><label>Role</label>
+                        <select id="am-role"><option value="member">Member</option><option value="trainer">Trainer</option></select>
+                    </div>
+                    <p id="am-error" class="msg msg--error hidden"></p>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">Tambah</button>
+                        <button type="button" id="btn-cancel-member" class="btn btn--ghost">Batal</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card table-card">
+                <table><thead><tr><th>#</th><th>Nama</th><th>Email</th><th>Role</th><th>Joined</th><th>Aksi</th></tr></thead>
+                <tbody id="members-body"><tr><td colspan="6" style="text-align:center;padding:28px;color:#9ca3af">Memuat...</td></tr></tbody></table>
+            </div>
+        </section>
+
+        <!-- Section: Schedule (Gym Classes) -->
+        <section id="section-schedule" class="content-section" style="display:none">
+            <header class="section-header">
+                <h2>Jadwal Kelas Gym</h2>
+            </header>
+            <div id="schedule-grid" class="schedule-grid"><p style="color:#9ca3af;padding:20px">Memuat jadwal...</p></div>
+        </section>
+
+        <!-- Section: My Schedule (Personal Training) -->
+        <section id="section-my-schedule" class="content-section" style="display:none">
+            <header class="section-header">
+                <h2>Jadwal Latihan Saya</h2>
+                <button id="btn-add-my-sched" class="btn btn--primary">+ Tambah Jadwal</button>
+            </header>
+            <div id="my-sched-form" class="card form-panel hidden" style="margin-bottom:20px">
+                <h4>Tambah Jadwal Latihan</h4>
+                <form id="form-my-sched" class="field-row">
+                    <div class="field-group"><label>Nama Latihan</label><input id="ms-name" type="text" required placeholder="Contoh: Leg Day"></div>
+                    <div class="field-group"><label>Hari</label>
+                        <select id="ms-day">
+                            <option value="Senin">Senin</option><option value="Selasa">Selasa</option>
+                            <option value="Rabu">Rabu</option><option value="Kamis">Kamis</option>
+                            <option value="Jumat">Jumat</option><option value="Sabtu">Sabtu</option>
+                            <option value="Minggu">Minggu</option>
+                        </select>
+                    </div>
+                    <div class="field-group"><label>Waktu</label><input id="ms-time" type="time" required></div>
+                    <div class="field-group"><label>Level</label>
+                        <select id="ms-level">
+                            <option value="Beginner">Beginner</option><option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option><option value="Personal">Personal</option>
+                        </select>
+                    </div>
+                    <div class="field-group" style="min-width:100%"><label>Catatan</label><textarea id="ms-notes" rows="2" placeholder="Catatan latihan..."></textarea></div>
+                    <p id="ms-error" class="msg msg--error hidden"></p>
+                    <div class="btn-row">
+                        <button type="submit" class="btn btn--primary">Tambah</button>
+                        <button type="button" id="btn-cancel-my-sched" class="btn btn--ghost">Batal</button>
+                    </div>
+                </form>
+            </div>
+            <div id="my-schedule-grid" class="schedule-grid"><p style="color:#9ca3af;padding:20px">Memuat jadwal...</p></div>
+        </section>
+
+        <!-- Section: Attendance -->
+        <section id="section-attendance" class="content-section" style="display:none">
+            <header class="section-header">
+                <h2>Attendance</h2>
+            </header>
+            <div class="card" style="margin-bottom:20px">
+                <h4 style="font-size:15px;font-weight:700;margin-bottom:14px">Check In ke Kelas</h4>
+                <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+                    <div class="field-group" style="flex:1;min-width:200px;margin-bottom:0">
+                        <label for="checkin-class">Pilih Kelas</label>
+                        <select id="checkin-class"><option value="">— Memuat kelas... —</option></select>
+                    </div>
+                    <button id="btn-checkin" class="btn btn--primary" style="height:42px">Check In</button>
+                </div>
+                <p id="checkin-msg" class="msg msg--success hidden" style="margin-top:12px"></p>
+                <p id="checkin-err" class="msg msg--error hidden" style="margin-top:12px"></p>
+            </div>
+            <p id="att-live" class="msg msg--success hidden" style="margin-bottom:16px"></p>
+            <div class="card table-card">
+                <table><thead><tr><th>#</th><th>Member</th><th>Kelas</th><th>Tanggal</th><th>Status</th></tr></thead>
+                <tbody id="att-body"><tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af">Memuat...</td></tr></tbody></table>
+            </div>
+        </section>
+
+        <!-- Section: Auth Logs -->
+        <section id="section-logs" class="content-section" style="display:none">
+            <header class="section-header">
+                <span id="polling-status" style="font-size:12px;color:#22c55e;display:none">● Polling aktif</span>
+                <button id="btn-clear-logs" class="btn btn--ghost">Hapus Logs</button>
+            </header>
+            <div class="card table-card">
+                <table><thead><tr><th>#</th><th>User</th><th>Action</th><th>Role</th><th>Timestamp</th></tr></thead>
+                <tbody id="log-body"><tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af">Memuat...</td></tr></tbody></table>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- FAQ Widget -->
+<div class="faq-widget">
+    <button id="faq-toggle" class="faq-toggle"><span id="faq-icon">💬</span><span class="faq-label">FAQ</span></button>
+    <div id="faq-box" class="faq-box hidden">
+        <header class="faq-header"><span>FitNez Support</span><button id="faq-close" class="faq-close">✕</button></header>
+        <div id="faq-messages" class="faq-messages"></div>
+        <div id="faq-options" class="faq-options hidden"></div>
+        <footer class="faq-footer">
+            <div id="faq-start-area"><button id="faq-start-btn" class="btn btn--primary btn--full">Mulai Chat</button></div>
+            <div id="faq-input-area" class="hidden" style="display:none">
+                <input id="faq-input" type="text" placeholder="Ketik pertanyaan..." style="flex:1;font-size:13px">
+                <button id="faq-send-btn" class="btn btn--primary">Kirim</button>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+
+// INIT
+
+let currentUser = null;
+let faqData = [];
+let gymClasses = [];
+
+(async function init() {
+    if (!Http.getToken()) { window.location.href = '/pages/login.html'; return; }
+
+    try {
+        const data = await Http.get('/auth/me');
+        currentUser = data.user;
+        localStorage.setItem('fitnez_user', JSON.stringify(currentUser));
+    } catch (e) {
+        Http.clearToken();
+        window.location.href = '/pages/login.html';
+        return;
+    }
+
+    setupNav();
+    renderProfile();
+    setupEventListeners();
+    loadFaqData();
+
+    // Real-time notifications
+    startPolling((data) => {
+        if (data.attendance?.length) {
+            data.attendance.forEach(d => {
+                showToast(`${d.member} check-in ke ${d.cls}`);
+                const liveEl = document.getElementById('att-live');
+                if (liveEl && document.getElementById('section-attendance').style.display !== 'none') {
+                    liveEl.textContent = '🔴 Live — ' + d.member + ' check-in ke ' + d.cls;
+                    liveEl.classList.remove('hidden');
+                    setTimeout(() => liveEl.classList.add('hidden'), 5000);
+                }
+            });
+            // Refresh tabel attendance jika sedang dilihat
+            if (document.getElementById('section-attendance').style.display !== 'none') {
+                loadAttendance();
+            }
+        }
+        if (data.logs?.length) {
+            data.logs.forEach(d => showToast(`${d.who} ${d.action}`));
+            // Refresh tabel logs jika sedang dilihat
+            if (document.getElementById('section-logs').style.display !== 'none') {
+                loadLogs();
+            }
+        }
+    });
+})();
+
+
+// NAVIGATION
+
+function setupNav() {
+    const role = currentUser.role;
+    document.getElementById('sb-role').textContent = role;
+
+    document.getElementById('nav-members').style.display = (role === 'admin' || role === 'trainer') ? 'flex' : 'none';
+    document.getElementById('nav-logs').style.display = role === 'admin' ? 'flex' : 'none';
+    if (role === 'admin') document.getElementById('btn-add-member').style.display = '';
+
+    document.querySelectorAll('.nav-item').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection(link.dataset.section, link);
+        });
+    });
+}
+
+function showSection(name, linkEl) {
+    document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+    const section = document.getElementById('section-' + name);
+    if (section) section.style.display = 'block';
+    if (linkEl) linkEl.classList.add('active');
+
+    if (name === 'members') loadMembers();
+    if (name === 'schedule') loadSchedule();
+    if (name === 'my-schedule') loadMySchedule();
+    if (name === 'attendance') { loadAttendance(); loadClassesForCheckin(); }
+    if (name === 'logs') { loadLogs(); document.getElementById('polling-status').style.display = ''; }
+}
+
+
+// PROFILE
+
+function renderProfile() {
+    const u = currentUser;
+    const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    document.getElementById('avatar').textContent = initials;
+    document.getElementById('p-name').textContent = u.name;
+    document.getElementById('p-email').textContent = u.email;
+    document.getElementById('p-role').textContent = u.role;
+    document.getElementById('p-joined').textContent = u.joined;
+    document.getElementById('p-badge').textContent = u.role;
+    document.getElementById('p-bio').textContent = u.bio || 'Belum ada bio';
+    document.getElementById('edit-name').value = u.name || '';
+    document.getElementById('edit-phone').value = u.phone || '';
+    document.getElementById('edit-bio').value = u.bio || '';
+
+    renderTrainerAction();
+}
+
+function renderTrainerAction() {
+    const el = document.getElementById('trainer-action');
+    const u = currentUser;
+
+    if (u.role === 'admin') { el.innerHTML = ''; return; }
+
+    if (u.role === 'trainer') {
+        el.innerHTML = '<button class="btn btn--ghost btn--full" id="btn-switch-role">🔄 Ubah menjadi Member</button>';
+        document.getElementById('btn-switch-role').addEventListener('click', handleRoleSwitch);
+    } else if (u.role === 'member' && u.has_trainer_cert) {
+        el.innerHTML = '<button class="btn btn--primary btn--full" id="btn-switch-role">🔄 Ubah menjadi Trainer</button>';
+        document.getElementById('btn-switch-role').addEventListener('click', handleRoleSwitch);
+    } else {
+        el.innerHTML = '<button class="btn btn--primary btn--full" onclick="window.location.href=\'/pages/trainer-register.html\'">🏋️ Daftar Trainer Sekarang!</button>';
+    }
+}
+
+async function handleRoleSwitch() {
+    const btn = document.getElementById('btn-switch-role');
+    btn.disabled = true;
+    btn.textContent = '⏳ Memproses...';
+
+    try {
+        const data = await Http.post('/users/switch-role', {});
+        currentUser = data.user;
+        localStorage.setItem('fitnez_user', JSON.stringify(currentUser));
+        showToast(data.message);
+        renderProfile();
+        setupNav();
+    } catch (e) {
+        alert('Gagal: ' + e.message);
+        btn.disabled = false;
+        renderTrainerAction();
+    }
+}
+
+
+// MEMBERS
+
+async function loadMembers() {
+    try {
+        const data = await Http.get('/users');
+        const users = data.users || [];
+        const tbody = document.getElementById('members-body');
+
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#9ca3af">Belum ada member.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map((u, i) => {
+            const delBtn = currentUser.role === 'admin' && u.id !== currentUser.id
+                ? `<button class="btn btn--ghost" style="padding:4px 10px;font-size:12px" onclick="deleteUser(${u.id})">Delete</button>`
+                : '—';
+            return `<tr>
+                <td>${i + 1}</td>
+                <td><strong>${u.name}</strong></td>
+                <td>${u.email}</td>
+                <td><span class="role-chip ${u.role}">${u.role}</span></td>
+                <td>${u.joined}</td>
+                <td>${delBtn}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) {
+        document.getElementById('members-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:28px">Gagal memuat data.</td></tr>';
+    }
+}
+
+async function deleteUser(id) {
+    if (!confirm('Yakin ingin menghapus user ini?')) return;
+    try { await Http.delete('/users/' + id); loadMembers(); }
+    catch (e) { alert('Gagal: ' + e.message); }
+}
+
+
+// SCHEDULE (Gym Classes)
+
+async function loadSchedule() {
+    const grid = document.getElementById('schedule-grid');
+    try {
+        const data = await Http.get('/schedule');
+        const classes = data.schedule || [];
+        gymClasses = classes;
+
+        if (!classes.length) { grid.innerHTML = '<p style="color:#9ca3af;padding:20px">Belum ada jadwal kelas.</p>'; return; }
+
+        grid.innerHTML = classes.map(c => `
+            <article class="sched-card">
+                <h4>${c.name}</h4>
+                <p>📅 ${c.day} · ${c.time}</p>
+                <p>👤 ${c.trainer}</p>
+                <p>🎯 ${c.level}</p>
+                <p>🪑 ${c.slots} spots available</p>
+            </article>
+        `).join('');
+    } catch (e) { grid.innerHTML = '<p style="color:#dc2626;padding:20px">Gagal memuat jadwal.</p>'; }
+}
+
+
+// MY SCHEDULE (Personal Training)
+
+async function loadMySchedule() {
+    const grid = document.getElementById('my-schedule-grid');
+    try {
+        const data = await Http.get('/schedule/my');
+        const items = data.schedule || [];
+
+        if (!items.length) {
+            grid.innerHTML = '<p style="color:#9ca3af;padding:20px">Belum ada jadwal latihan pribadi. Klik tombol + untuk menambahkan.</p>';
+            return;
+        }
+
+        grid.innerHTML = items.map(s => `
+            <article class="sched-card">
+                <h4>${s.name}</h4>
+                <p>📅 ${s.day} · ${s.time}</p>
+                <p>🎯 ${s.level}</p>
+                ${s.notes ? `<p>📝 ${s.notes}</p>` : ''}
+                <button class="btn btn--ghost" style="margin-top:10px;padding:6px 12px;font-size:12px" onclick="deleteMySchedule(${s.id})">🗑️ Hapus</button>
+            </article>
+        `).join('');
+    } catch (e) { grid.innerHTML = '<p style="color:#dc2626;padding:20px">Gagal memuat jadwal.</p>'; }
+}
+
+async function deleteMySchedule(id) {
+    if (!confirm('Hapus jadwal latihan ini?')) return;
+    try { await Http.delete('/schedule/my/' + id); loadMySchedule(); }
+    catch (e) { alert('Gagal: ' + e.message); }
+}
+
+
+// ATTENDANCE
+
+async function loadClassesForCheckin() {
+    const select = document.getElementById('checkin-class');
+    try {
+        const data = await Http.get('/schedule');
+        gymClasses = data.schedule || [];
+
+        select.innerHTML = '<option value="">— Pilih Kelas —</option>';
+        gymClasses.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.name} — ${c.day} ${c.time} (${c.trainer})</option>`;
+        });
+    } catch (e) {
+        select.innerHTML = '<option value="">Gagal memuat kelas</option>';
+    }
+}
+
+async function loadAttendance() {
+    try {
+        const data = await Http.get('/attendance');
+        const list = data.attendance || [];
+        const tbody = document.getElementById('att-body');
+
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af">Belum ada data.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map((a, i) => `<tr>
+            <td>${i + 1}</td>
+            <td>${a.member}</td>
+            <td>${a.cls}</td>
+            <td>${a.date}</td>
+            <td><span class="role-chip member">${a.status}</span></td>
+        </tr>`).join('');
+    } catch (e) { document.getElementById('att-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:28px">Gagal memuat.</td></tr>'; }
+}
+
+
+// AUTH LOGS
+
+async function loadLogs() {
+    try {
+        const data = await Http.get('/logs');
+        renderLogs(data.logs || []);
+    } catch (e) { document.getElementById('log-body').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:28px">Gagal memuat.</td></tr>'; }
+}
+
+function renderLogs(logs) {
+    const tbody = document.getElementById('log-body');
+    if (!logs.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:#9ca3af">Belum ada log.</td></tr>'; return; }
+
+    tbody.innerHTML = logs.map((l, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${l.who}</td>
+        <td><strong>${l.action}</strong></td>
+        <td><span class="role-chip ${l.role}">${l.role}</span></td>
+        <td>${l.ts}</td>
+    </tr>`).join('');
+}
+
+
+// FAQ WIDGET
+
+let faqOpen = false, faqStarted = false, faqInputMode = false;
+
+async function loadFaqData() {
+    try {
+        const data = await Http.get('/faq');
+        faqData = data.faq || [];
+    } catch (e) {
+        faqData = [
+            { question: '📅 Jadwal Kelas', answer: 'Yoga (Senin), HIIT (Selasa), Pilates (Rabu), Spin (Kamis), Zumba (Jumat), Combat (Sabtu)', category: 'schedule' },
+            { question: '💰 Harga Trainer', answer: 'Sesi: Rp400k, 5 sesi: Rp1.8jt, 10 sesi: Rp3.4jt', category: 'pricing' },
+            { question: '📢 Keluhan', answer: 'Email: supportfitnez@gmail.com', category: 'feedback' },
+            { question: 'ℹ️ Tentang FitNez', answer: 'Platform manajemen gym modern.', category: 'general' },
+        ];
+    }
+}
+
+function toggleFaq() {
+    faqOpen = !faqOpen;
+    document.getElementById('faq-box').classList.toggle('hidden', !faqOpen);
+    document.getElementById('faq-icon').textContent = faqOpen ? '✕' : '💬';
+}
+
+function startFaq() {
+    if (faqStarted) return;
+    faqStarted = true;
+    document.getElementById('faq-start-area').style.display = 'none';
+    document.getElementById('faq-options').classList.remove('hidden');
+    addBubble('Hi! 👋 Selamat datang di FitNez Support. Pilih pertanyaan di bawah.', 'bot');
+    showFaqMenu();
+}
+
+function showFaqMenu() {
+    const optEl = document.getElementById('faq-options');
+    optEl.innerHTML = '';
+    faqData.forEach((f, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'faq-opt-btn';
+        btn.textContent = f.question;
+        btn.addEventListener('click', () => selectFaq(i));
+        optEl.appendChild(btn);
+    });
+    const customBtn = document.createElement('button');
+    customBtn.className = 'faq-opt-btn';
+    customBtn.style.cssText = 'color:#6b7280;border-color:#e5e7eb';
+    customBtn.textContent = '✏️ Ketik pertanyaan sendiri';
+    customBtn.addEventListener('click', enableFaqInput);
+    optEl.appendChild(customBtn);
+}
+
+function selectFaq(i) {
+    const f = faqData[i];
+    addBubble(f.question, 'user');
+    setTimeout(() => { addBubble(f.answer, 'bot'); setTimeout(() => { addBubble('Ada yang lain?', 'bot'); showFaqMenu(); }, 600); }, 300);
+}
+
+function enableFaqInput() {
+    faqInputMode = true;
+    document.getElementById('faq-input-area').style.display = 'flex';
+    document.getElementById('faq-options').innerHTML = '';
+    document.getElementById('faq-input').focus();
+}
+
+function sendFaqMessage() {
+    const input = document.getElementById('faq-input');
+    const text = input.value.trim();
+    if (!text) return;
+    addBubble(text, 'user');
+    input.value = '';
+    const lc = text.toLowerCase();
+    setTimeout(() => {
+        const match = faqData.find(f => f.category && lc.includes(f.category));
+        addBubble(match ? match.answer : 'Terima kasih! 😊 Silakan email supportfitnez@gmail.com.', 'bot');
+        faqInputMode = false;
+        document.getElementById('faq-input-area').style.display = 'none';
+        setTimeout(() => { addBubble('Butuh bantuan lain?', 'bot'); showFaqMenu(); }, 700);
+    }, 400);
+}
+
+function addBubble(text, type) {
+    const msgs = document.getElementById('faq-messages');
+    const div = document.createElement('div');
+    div.className = 'faq-bubble ' + type;
+    div.innerHTML = text.replace(/\n/g, '<br>');
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+
+// TOAST
+
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+
+// EVENT LISTENERS
+
+function setupEventListeners() {
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+        try { await Http.post('/auth/logout', {}); } catch (_) {}
+        Http.clearToken();
+        localStorage.removeItem('fitnez_user');
+        stopPolling();
+        window.location.href = '/pages/login.html';
+    });
+
+    // Profile update
+    document.getElementById('form-profile').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const data = await Http.put('/users/profile', {
+                name: document.getElementById('edit-name').value.trim(),
+                phone: document.getElementById('edit-phone').value.trim(),
+                bio: document.getElementById('edit-bio').value.trim(),
+            });
+            currentUser = data.user;
+            localStorage.setItem('fitnez_user', JSON.stringify(currentUser));
+            renderProfile();
+            const msg = document.getElementById('profile-msg');
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 3000);
+        } catch (e) { alert('Gagal: ' + e.message); }
+    });
+
+    // Add member toggle
+    document.getElementById('btn-add-member').addEventListener('click', () => {
+        document.getElementById('add-member-form').classList.toggle('hidden');
+    });
+    document.getElementById('btn-cancel-member').addEventListener('click', () => {
+        document.getElementById('add-member-form').classList.add('hidden');
+    });
+
+    // Add member submit
+    document.getElementById('form-add-member').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('am-error');
+        errEl.classList.add('hidden');
+        const name = document.getElementById('am-name').value.trim();
+        const email = document.getElementById('am-email').value.trim();
+        const role = document.getElementById('am-role').value;
+        if (!name || !email) { errEl.textContent = 'Nama dan email wajib.'; errEl.classList.remove('hidden'); return; }
+        try {
+            await Http.post('/users', { name, email, role });
+            document.getElementById('add-member-form').classList.add('hidden');
+            document.getElementById('form-add-member').reset();
+            loadMembers();
+        } catch (e) { errEl.textContent = e.message; errEl.classList.remove('hidden'); }
+    });
+
+    // Check-in
+    document.getElementById('btn-checkin').addEventListener('click', async () => {
+        const scheduleId = document.getElementById('checkin-class').value;
+        const msgEl = document.getElementById('checkin-msg');
+        const errEl = document.getElementById('checkin-err');
+        msgEl.classList.add('hidden');
+        errEl.classList.add('hidden');
+
+        if (!scheduleId) {
+            errEl.textContent = 'Silakan pilih kelas terlebih dahulu.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const data = await Http.post('/attendance', { schedule_id: parseInt(scheduleId) });
+            msgEl.textContent = data.message;
+            msgEl.classList.remove('hidden');
+            loadAttendance();
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.classList.remove('hidden');
+        }
+    });
+
+    // My Schedule — toggle form
+    document.getElementById('btn-add-my-sched').addEventListener('click', () => {
+        document.getElementById('my-sched-form').classList.toggle('hidden');
+    });
+    document.getElementById('btn-cancel-my-sched').addEventListener('click', () => {
+        document.getElementById('my-sched-form').classList.add('hidden');
+    });
+
+    // My Schedule — submit
+    document.getElementById('form-my-sched').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('ms-error');
+        errEl.classList.add('hidden');
+
+        const name  = document.getElementById('ms-name').value.trim();
+        const day   = document.getElementById('ms-day').value;
+        const time  = document.getElementById('ms-time').value;
+        const level = document.getElementById('ms-level').value;
+        const notes = document.getElementById('ms-notes').value.trim();
+
+        if (!name || !time) {
+            errEl.textContent = 'Nama dan waktu wajib diisi.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            await Http.post('/schedule/my', { name, day, time, level, notes });
+            document.getElementById('my-sched-form').classList.add('hidden');
+            document.getElementById('form-my-sched').reset();
+            loadMySchedule();
+            showToast('Jadwal latihan berhasil ditambahkan!');
+        } catch (e) {
+            errEl.textContent = e.message;
+            errEl.classList.remove('hidden');
+        }
+    });
+
+    // Clear logs
+    document.getElementById('btn-clear-logs').addEventListener('click', async () => {
+        if (!confirm('Hapus semua auth logs?')) return;
+        try { await Http.delete('/logs'); loadLogs(); } catch (e) { alert('Gagal: ' + e.message); }
+    });
+
+    // FAQ
+    document.getElementById('faq-toggle').addEventListener('click', toggleFaq);
+    document.getElementById('faq-close').addEventListener('click', toggleFaq);
+    document.getElementById('faq-start-btn').addEventListener('click', startFaq);
+    document.getElementById('faq-send-btn').addEventListener('click', sendFaqMessage);
+    document.getElementById('faq-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendFaqMessage(); });
+}
+</script>
+</body>
+</html>
