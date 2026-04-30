@@ -11,21 +11,9 @@ use App\Contracts\OtpGeneratorInterface;
  * ══════════════════════════════════════════════════════════════
  *  ABSTRACT FACTORY — Creational Pattern
  * ══════════════════════════════════════════════════════════════
- *
- * Memproduksi keluarga objek autentikasi yang saling terkait
- * tanpa menentukan kelas konkretnya.
- *
- * Setiap "provider" (local, google, dll) memiliki factory sendiri
- * yang memproduksi: PasswordHasher, TokenGenerator, OtpGenerator
- *
- * Manfaat maintenance:
- * - Tambah provider baru → buat factory baru, tanpa ubah kode lama
- * - Semua objek auth dari satu provider dijamin kompatibel
- * - Client code (controller) tidak perlu tahu kelas konkret
- * ══════════════════════════════════════════════════════════════
  */
 
-// ── INTERFACE (Abstract Factory) ──────────────────────────────
+// ── INTERFACE (Abstract Factory)
 
 interface AuthFactoryInterface
 {
@@ -34,7 +22,7 @@ interface AuthFactoryInterface
     public function createOtpGenerator(): OtpGeneratorInterface;
 }
 
-// ── CONCRETE FACTORY: Local Auth ──────────────────────────────
+// ── CONCRETE FACTORY: Local Auth 
 
 class LocalAuthFactory implements AuthFactoryInterface
 {
@@ -54,7 +42,7 @@ class LocalAuthFactory implements AuthFactoryInterface
     }
 }
 
-// ── CONCRETE FACTORY: Google OAuth (contoh extensibility) ─────
+// ── CONCRETE FACTORY: Google OAuth
 
 class GoogleAuthFactory implements AuthFactoryInterface
 {
@@ -74,7 +62,7 @@ class GoogleAuthFactory implements AuthFactoryInterface
     }
 }
 
-// ── PRODUCT INTERFACES ────────────────────────────────────────
+// ── PRODUCT INTERFACES
 
 interface PasswordHasherInterface
 {
@@ -96,7 +84,7 @@ interface OtpGeneratorInterface
     public function isEnabled(): bool;
 }
 
-// ── CONCRETE PRODUCTS ─────────────────────────────────────────
+// ── CONCRETE PRODUCTS 
 
 class Sha256SaltHasher implements PasswordHasherInterface
 {
