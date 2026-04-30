@@ -3,127 +3,87 @@
 namespace App\Http\Controllers;
 
 use App\Models\VisitorTracking;
+use App\Services\Tracking\AndroidTrackingAdapter;
+use App\Services\Tracking\TrackingDataInterface;
+use App\Services\Tracking\WebBrowserTrackingAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
  * ══════════════════════════════════════════════════════════════
- *  TRACKING CONTROLLER — Web Tracking (Tanpa Google Analytics)
+ *  TRACKING CONTROLLER (Refactored with Adapter Pattern)
  * ══════════════════════════════════════════════════════════════
  *
- * Implementasi poin e.2:
- * - Calon pengguna dimintakan izin cookies/localStorage
- * - Data trafik dikirim ke server hanya jika consent diberikan
- * - Tracking terjadi setiap kali user membuka landing page
+ * Adapter pattern menerjemahkan data dari platform berbeda
+ * (Web Browser, Android) ke format standar sebelum disimpan.
  *
- * Kontrol penyimpanan:
- * - Halaman publik: tracking data pengunjung (consent required)
- * - Halaman privat: data user terautentikasi (session/token)
+ * Controller tidak perlu tahu format spesifik tiap platform.
  * ══════════════════════════════════════════════════════════════
  */
 class TrackingController
 {
     /**
-     * POST /api/tracking/visit — catat kunjungan landing page
-     * Hanya dicatat jika consent_given = true
+     * POST /api/tracking/visit
+     * Menerima data dari Web Browser ATAU Android App
      */
     public function recordVisit(Request $request): JsonResponse
     {
-        $consentGiven = (bool) $request->input('consent_given', false);
+        $rawData = $request->all();
 
-        if (!$consentGiven) {
+        // Pilih adapter berdasarkan platform
+        $adapter = $this->resolveAdapter($rawData, $request);
+
+        if (!$adapter->hasConsent()) {
             return response()->json([
-                'message'  => 'Consent belum diberikan. Data tidak disimpan.',
-                'tracked'  => false,
+                'message' => 'Consent belum diberikan. Data tidak disimpan.',
+                'tracked' => false,
             ]);
         }
 
-        // ── Parse data dari client ──
-        $visitorId = $request->input('visitor_id', '');
-        if (!$visitorId) {
-            $visitorId = bin2hex(random_bytes(16));
-        }
-
-        $userAgent = $request->userAgent();
-
-        VisitorTracking::create([
-            'visitor_id'        => $visitorId,
-            'session_id'        => $request->input('session_id'),
-            'page_url'          => $request->input('page_url', '/'),
-            'referrer'          => $request->input('referrer'),
-            'user_agent'        => $userAgent,
-            'ip_address'        => $request->ip(),
-            'device_type'       => $request->input('device_type'),
-            'browser'           => $request->input('browser'),
-            'os'                => $request->input('os'),
-            'screen_resolution' => $request->input('screen_resolution'),
-            'language'          => $request->input('language'),
-            'country'           => $request->input('country'),
-            'time_on_page'      => $request->input('time_on_page'),
-            'consent_given'     => true,
-            'extra_data'        => $request->input('extra_data'),
-        ]);
+        // Adapter menghasilkan format standar → langsung simpan
+        VisitorTracking::create($adapter->toArray());
 
         return response()->json([
             'message'    => 'Kunjungan berhasil dicatat.',
             'tracked'    => true,
-            'visitor_id' => $visitorId,
+            'visitor_id' => $adapter->getVisitorId(),
         ]);
     }
 
     /**
-     * POST /api/tracking/time — update waktu di halaman
+     * Resolve adapter yang tepat berdasarkan data yang diterima
      */
-    public function updateTime(Request $request): JsonResponse
+    private function resolveAdapter(array $data, Request $request): TrackingDataInterface
     {
-        $visitorId  = $request->input('visitor_id', '');
-        $timeOnPage = (int) $request->input('time_on_page', 0);
+        // Deteksi platform dari data
+        $isAndroid = isset($data['device_id']) ||
+                     isset($data['app_session_id']) ||
+                     isset($data['screen_name']) ||
+                     str_contains($request->userAgent() ?? '', 'FitNez-Android');
 
-        if (!$visitorId) {
-            return response()->json(['error' => 'Visitor ID required.'], 400);
+        if ($isAndroid) {
+            $data['ip_address'] = $request->ip();
+            return new AndroidTrackingAdapter($data);
         }
 
-        $record = VisitorTracking::where('visitor_id', $visitorId)
-            ->orderBy('id', 'desc')
-            ->first();
-
-        if ($record) {
-            $record->update(['time_on_page' => $timeOnPage]);
-        }
-
-        return response()->json(['message' => 'Time updated.']);
+        return new WebBrowserTrackingAdapter($data, $request->ip(), $request->userAgent());
     }
 
     /**
-     * GET /api/tracking/stats — admin lihat statistik pengunjung
+     * GET /api/tracking/stats (admin only)
      */
-    public function stats(Request $request): JsonResponse
+    public function stats(): JsonResponse
     {
-        $totalVisits    = VisitorTracking::count();
-        $uniqueVisitors = VisitorTracking::distinct('visitor_id')->count();
-        $todayVisits    = VisitorTracking::whereDate('created_at', today())->count();
-
-        $deviceBreakdown = VisitorTracking::selectRaw('device_type, COUNT(*) as total')
-            ->groupBy('device_type')
-            ->get();
-
-        $browserBreakdown = VisitorTracking::selectRaw('browser, COUNT(*) as total')
-            ->groupBy('browser')
-            ->orderByDesc('total')
-            ->limit(10)
-            ->get();
-
-        $recentVisits = VisitorTracking::orderBy('created_at', 'desc')
-            ->limit(20)
-            ->get(['visitor_id', 'page_url', 'device_type', 'browser', 'created_at']);
-
         return response()->json([
-            'total_visits'      => $totalVisits,
-            'unique_visitors'   => $uniqueVisitors,
-            'today_visits'      => $todayVisits,
-            'device_breakdown'  => $deviceBreakdown,
-            'browser_breakdown' => $browserBreakdown,
-            'recent_visits'     => $recentVisits,
+            'total_visits'    => VisitorTracking::count(),
+            'unique_visitors' => VisitorTracking::distinct('visitor_id')->count('visitor_id'),
+            'today_visits'    => VisitorTracking::whereDate('created_at', today())->count(),
+            'device_breakdown' => VisitorTracking::selectRaw('device_type, COUNT(*) as total')
+                ->groupBy('device_type')->get(),
+            'browser_breakdown' => VisitorTracking::selectRaw('browser, COUNT(*) as total')
+                ->groupBy('browser')->orderByDesc('total')->limit(10)->get(),
+            'recent_visits' => VisitorTracking::orderBy('created_at', 'desc')
+                ->limit(20)->get(['visitor_id', 'page_url', 'device_type', 'browser', 'created_at']),
         ]);
     }
 }
